@@ -1,10 +1,5 @@
-# Use an official lightweight Node.js image
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install
-
-EXPOSE 3000
-CMD ["npm", "start"]
+FROM ubuntu:22.04
+RUN apt update && apt install python3 -y
+COPY app.py /tmp
+EXPOSE 8080
+CMD [ "python3" , "/tmp/app.py" ]
