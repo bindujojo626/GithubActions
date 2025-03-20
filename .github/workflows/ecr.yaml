@@ -1,31 +1,42 @@
-name: Build and Push to ECR
+name: Build and Push Docker Image to ECR
+
 on:
   push:
     branches:
       - main
+
 jobs:
   push_to_ecr:
-    name: Push Docker Image to Amazon ECR
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Load environment variables
+        run: cat config.env >> $GITHUB_ENV
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+
       - name: Build, Tag, and Push Image to ECR
         env:
           ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           IMAGE_TAG: latest
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build \
+            --build-arg APP_PORT=$APP_PORT \
+            --build-arg DB_HOST=$DB_HOST \
+            --build-arg DB_USER=$DB_USER \
+            --build-arg DB_PASS=$DB_PASS \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-      - name: Verify Image in ECR
-        run: aws ecr describe-images --repository-name ${{ secrets.ECR_REPOSITORY }}
